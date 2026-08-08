@@ -1,4 +1,4 @@
-# Code for NIR Calibration Transfer Manuscript
+# A Preprocessing Framework for Calibration Transfer of Near-infrared Spectroscopic Data
 
 This folder contains the code used for the revised manuscript.
 
