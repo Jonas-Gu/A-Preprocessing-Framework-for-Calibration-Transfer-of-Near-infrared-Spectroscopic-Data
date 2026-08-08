@@ -1,0 +1,72 @@
+%BaseLine
+function funcs = baselineFuncs()
+funcs  = {@none,@baseline_derivate1_1,...
+    @baseline_derivate1_3,@baseline_derivate1_4,@baseline_derivate2_2,...
+    @baseline_derivate2_3,@baseline_derivate2_4,@baseline_derivate2_5};
+   
+end
+function [NewXtrain,NewXval] = baseline_derivate1_1(Xtrain,Xval)
+ws = default_windows();
+order = 1;
+der = 1;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+function [NewXtrain,NewXval] = baseline_derivate1_3(Xtrain,Xval)
+ws = default_windows();
+order = 3;
+der = 1;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+function [NewXtrain,NewXval] = baseline_derivate1_4(Xtrain,Xval)
+ws = default_windows();
+order = 4;
+der = 1;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+
+function [NewXtrain,NewXval] = baseline_derivate2_2(Xtrain,Xval)
+ws = default_windows();
+order = 2;
+der = 2;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+
+function [NewXtrain,NewXval] = baseline_derivate2_3(Xtrain,Xval)
+ws = default_windows();
+order = 3;
+der = 2;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+function [NewXtrain,NewXval] = baseline_derivate2_4(Xtrain,Xval)
+ws = default_windows();
+order = 4;
+der = 2;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end
+function [NewXtrain,NewXval] = baseline_derivate2_5(Xtrain,Xval)
+ws = default_windows();
+order = 5;
+der = 2;
+[NewXtrain]  = savgol(Xtrain,ws,order,der);
+if nargin>1
+    NewXval = savgol(Xval,ws,order,der);
+end
+end

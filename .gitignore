@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.log
+
+# Local outputs generated during reruns
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.fig
+*.pdf
+*.csv
+!wheatA1_split_indices.csv
+!wheatA3_split_indices.csv
+
+# Notebook checkpoints and local environments
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+~$*
