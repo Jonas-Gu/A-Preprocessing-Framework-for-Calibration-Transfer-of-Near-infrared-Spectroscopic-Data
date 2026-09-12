@@ -2,44 +2,74 @@ clear;
 close all;
 global Configuration;
 
-%sourceDataset = "nirshootout1";
-%targetDataset = "nirshootout2";
-sourceDataset = "wheatA1_20048"; 
-targetDataset = "wheatA3_48200"; 
 task = 'proposed';
 fold = 4;
 LV = 10;
-
-Configuration = [];
-source_data = load(sourceDataset);
-target_data = load(targetDataset);
-buildConfigration(task, fold, LV);
-
-Configuration.Xtarget = target_data.X;
-Configuration.Xtarget_RAW = target_data.X;
-Configuration.XtrainData = source_data.X;
-Configuration.ytrainData = source_data.y;
-Configuration.Xtarget_test = target_data.Xtest;
-Configuration.ytarget_test = target_data.ytest;
-
 lv_values = 6:LV;
 
-fprintf('\n========================================\n');
-fprintf('[Benchmark] GA\n');
-fprintf('========================================\n');
-ga_summary = runGaBenchmark(source_data, target_data);
+dataset_pairs = {
+    "wheat", "wheatA1_20048", "wheatA3_48200";
+    "pharmaceutical_tablet", "nirshootout1", "nirshootout2"
+};
+
+all_comparison_tables = table();
+all_grid_selection_tables = table();
+
+for dataset_idx = 1:size(dataset_pairs, 1)
+    dataset_name = dataset_pairs{dataset_idx, 1};
+    sourceDataset = dataset_pairs{dataset_idx, 2};
+    targetDataset = dataset_pairs{dataset_idx, 3};
+
+    fprintf('\n============================================================\n');
+    fprintf('[Dataset] %s | source=%s | target=%s\n', ...
+        dataset_name, sourceDataset, targetDataset);
+    fprintf('============================================================\n');
+
+    Configuration = [];
+    source_data = load(sourceDataset);
+    target_data = load(targetDataset);
+    buildConfigration(task, fold, LV);
+
+    Configuration.Xtarget = target_data.X;
+    Configuration.Xtarget_RAW = target_data.X;
+    Configuration.XtrainData = source_data.X;
+    Configuration.ytrainData = source_data.y;
+    Configuration.Xtarget_test = target_data.Xtest;
+    Configuration.ytarget_test = target_data.ytest;
+
+    fprintf('\n========================================\n');
+    fprintf('[Benchmark] GA\n');
+    fprintf('========================================\n');
+    ga_summary = runGaBenchmark(source_data, target_data);
+
+    fprintf('\n========================================\n');
+    fprintf('[Benchmark] Grid search\n');
+    fprintf('========================================\n');
+    grid_summary = runGridSearchBenchmark(source_data, target_data, lv_values);
+
+    comparison_table = buildComparisonTable(dataset_name, ga_summary, grid_summary);
+    grid_selection_table = buildGridSelectionTable(dataset_name, grid_summary);
+
+    plotSearchComparison(comparison_table, dataset_name);
+
+    all_comparison_tables = [all_comparison_tables; comparison_table]; %#ok<AGROW>
+    all_grid_selection_tables = [all_grid_selection_tables; grid_selection_table]; %#ok<AGROW>
+
+    disp(comparison_table);
+end
 
 fprintf('\n========================================\n');
-fprintf('[Benchmark] Grid search\n');
+fprintf('[Summary] GA versus exhaustive grid search\n');
 fprintf('========================================\n');
-[grid_summary, candidate_table] = runGridSearchBenchmark(source_data, target_data, lv_values);
+disp(all_comparison_tables);
 
-comparison_table = buildComparisonTable(ga_summary, grid_summary);
-grid_selection_table = buildGridSelectionTable(grid_summary);
-
-plotSearchComparison(comparison_table);
-
-disp(comparison_table);
+if ~exist('results', 'dir')
+    mkdir('results');
+end
+writetable(all_comparison_tables, fullfile('results', 'table7_ga_grid_search_comparison.csv'));
+writetable(all_grid_selection_tables, fullfile('results', 'grid_search_selected_models.csv'));
+fprintf('[Output] Results written to results/table7_ga_grid_search_comparison.csv\n');
+fprintf('[Output] Grid-selected models written to results/grid_search_selected_models.csv\n');
 
 function summary = runGaBenchmark(source_data, target_data)
     t_start = tic;
@@ -80,7 +110,7 @@ function summary = runGaBenchmark(source_data, target_data)
     fprintf('[GA] %s\n', char(summary.combo_name));
 end
 
-function [summary, candidate_table] = runGridSearchBenchmark(source_data, target_data, lv_values)
+function summary = runGridSearchBenchmark(source_data, target_data, lv_values)
     global Configuration;
 
     combo_matrix = buildComboMatrix();
@@ -174,7 +204,8 @@ function [summary, candidate_table] = runGridSearchBenchmark(source_data, target
     fprintf('[Grid Search] %s\n', char(summary.combo_name));
 end
 
-function comparison_table = buildComparisonTable(ga_summary, grid_summary)
+function comparison_table = buildComparisonTable(dataset_name, ga_summary, grid_summary)
+    dataset = [dataset_name; dataset_name];
     method = [ga_summary.method; grid_summary.method];
     candidate_count = [ga_summary.candidate_count; grid_summary.candidate_count];
     selected_lv = [ga_summary.lv; grid_summary.lv];
@@ -188,12 +219,13 @@ function comparison_table = buildComparisonTable(ga_summary, grid_summary)
     seconds_per_model = [ga_summary.seconds_per_model; grid_summary.seconds_per_model];
     combo = [ga_summary.combo_name; grid_summary.combo_name];
 
-    comparison_table = table(method, candidate_count, selected_lv, rmsecv, ...
+    comparison_table = table(dataset, method, candidate_count, selected_lv, rmsecv, ...
         wasserstein, selection_score, target_rmsep, ...
         target_r2, target_rpd, elapsed_seconds, seconds_per_model, combo);
 end
 
-function grid_selection_table = buildGridSelectionTable(grid_summary)
+function grid_selection_table = buildGridSelectionTable(dataset_name, grid_summary)
+    dataset = dataset_name;
     candidate_index = grid_summary.candidate_index;
     lv = grid_summary.lv;
     rmsecv = grid_summary.rmsecv;
@@ -207,16 +239,16 @@ function grid_selection_table = buildGridSelectionTable(grid_summary)
     seconds_per_model = grid_summary.seconds_per_model;
     combo = grid_summary.combo_name;
 
-    grid_selection_table = table(candidate_index, lv, rmsecv, ...
+    grid_selection_table = table(dataset, candidate_index, lv, rmsecv, ...
         wasserstein, proposed_score, target_rmsep, target_r2, target_rpd, ...
         total_models, elapsed_seconds, seconds_per_model, combo);
 end
 
-function plotSearchComparison(comparison_table)
+function plotSearchComparison(comparison_table, dataset_name)
     method_labels = {'GA', 'Grid search'};
     bar_colors = [0.05, 0.20, 0.55; 0.70, 0.10, 0.10];
 
-    runtime_fig = figure('Name', 'GA and Grid Search Runtime', ...
+    runtime_fig = figure('Name', char("GA and Grid Search Runtime - " + dataset_name), ...
         'Color', 'w', 'Units', 'centimeters', 'Position', [3, 3, 10.16, 10.16]);
     runtime_ax = axes(runtime_fig);
     runtime_values = comparison_table.elapsed_seconds;
@@ -229,13 +261,13 @@ function plotSearchComparison(comparison_table)
     end
     xticks(runtime_ax, 1:2);
     xticklabels(runtime_ax, method_labels);
-    ylabel(runtime_ax, 'Elapsed time (s)', 'FontSize', 14, 'FontWeight', 'normal');
+    ylabel(runtime_ax, 'Elapsed time (seconds)', 'FontSize', 14, 'FontWeight', 'normal');
     legend(runtime_ax, method_labels, 'Location', 'northwest', 'Box', 'off', ...
         'FontName', 'Times New Roman', 'FontSize', 12);
     addBarLabels(runtime_ax, runtime_values, '%.3f');
     styleComparisonAxis(runtime_ax);
 
-    rmse_fig = figure('Name', 'GA and Grid Search RMSE Comparison', ...
+    rmse_fig = figure('Name', char("GA and Grid Search RMSE Comparison - " + dataset_name), ...
         'Color', 'w', 'Units', 'centimeters', 'Position', [14, 3, 10.16, 10.16]);
     rmse_ax = axes(rmse_fig);
     rmse_values = [comparison_table.rmsecv'; comparison_table.target_rmsep'];
