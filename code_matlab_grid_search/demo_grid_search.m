@@ -2,6 +2,10 @@ clear;
 close all;
 global Configuration;
 
+thisDir = fileparts(mfilename('fullpath'));
+addpath(thisDir);
+addpath(fullfile(thisDir, '..', 'code_matlab'));
+
 % ---Configuration---
 %sourceDataset = "wheatA1_20048"; 
 %targetDataset = "wheatA3_48200"; 
